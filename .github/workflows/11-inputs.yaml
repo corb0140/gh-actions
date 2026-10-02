@@ -1,4 +1,4 @@
-name: Using Inputs in Workflows
+name: 11 - Using Inputs in Workflows
 
 on:
   workflow_dispatch:
