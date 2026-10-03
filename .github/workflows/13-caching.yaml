@@ -13,7 +13,7 @@ on:
         options:
           - "24.x"
           - "23.x"
-          - "22-.x"
+          - "22.x"
           - "21.x"
         default: "24.x"
 
@@ -24,19 +24,19 @@ jobs:
       run:
         working-directory: 13-caching/react-app
     outputs:
-      deps-cache-key: ${{ steps.cache.outputs.CACHE_KEY }}
+      deps-cache-key: ${{ steps.cache-key.outputs.CACHE_KEY }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{inputs.node-version}}
       - name: Calculate cache key
         id: cache-key
         run: echo "CACHE_KEY=deps-node-modules-${{hashFiles('13-caching/react-app/package-lock.json')}}" >> $GITHUB_OUTPUT
       - name: Download cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: ${{ inputs.use-cache }}
         id: cache
         with:
@@ -55,11 +55,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{inputs.node-version}}
       - name: Download cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: ${{ inputs.use-cache }}
         id: cache
         with:
@@ -79,11 +79,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
       - name: Setup Node
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{inputs.node-version}}
       - name: Download cache dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         if: ${{ inputs.use-cache }}
         id: cache
         with:
@@ -91,4 +91,3 @@ jobs:
           key: ${{ needs.install-deps.outputs.deps-cache-key }}
       - name: Building
         run: npm run build
-  
