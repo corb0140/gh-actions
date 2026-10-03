@@ -1,0 +1,48 @@
+name: 13 - Working with caching
+
+on:
+  workflow_dispatch:
+    inputs:
+      use-cache:
+        description: "Whether to execute cache step"
+        type: boolean
+        default: true
+      node-version:
+        description: "Node.js version to use"
+        type: choice
+        options:
+          - "24.x"
+          - "23.x"
+          - "22-.x"
+          - "21.x"
+        default: "24.x"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: 13-caching/react-app
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{inputs.node-version}}
+      - name: Download cache dependencies
+        uses: actions/cache@v3
+        if: ${{ inputs.use-cache }}
+        id: cache
+        with:
+          path: 13-caching/react-app/node_modules
+          key: deps-node-modules-${{hashFiles('13-caching/react-app/package-lock.json')}}
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
+      - name: Testing
+        run: npm run test
+      - name: Building
+        run: npm run build
+      - name: Deploying to non-prod
+        run: echo "Deploying to non-prod"
