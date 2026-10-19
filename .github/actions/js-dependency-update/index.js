@@ -1,5 +1,5 @@
-const core = require(`@actions/core`);
-const exec = require(`@actions/exec`);
+const core = require("@actions/core");
+const exec = require("@actions/exec");
 const github = require("@actions/github");
 
 // validate strings to prevent injections
@@ -65,7 +65,7 @@ async function run() {
   });
 
   const gitStatus = await exec.getExecOutput(
-    "git status -s package*-json",
+    "git status -s package*.json",
     [],
     {
       ...commonExecOpts,
