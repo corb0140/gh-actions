@@ -1,5 +1,6 @@
 const core = require(`@actions/core`);
 const exec = require(`@actions/exec`);
+const github = require("@actions/github");
 
 // validate strings to prevent injections
 const validateBranchName = ({ branchName }) =>
@@ -22,11 +23,15 @@ async function run() {
     5. Otherwise conclude the action
     */
 
-  const baseBranch = core.getInput("base-branch");
-  const targetBranch = core.getInput("target-branch");
-  const ghToken = core.getInput("gh-token"); // should be treated as a secret
-  const workingDir = core.getInput("working-directory");
+  const baseBranch = core.getInput("base-branch", { required: true });
+  const targetBranch = core.getInput("target-branch", { required: true });
+  const ghToken = core.getInput("gh-token", { required: true }); // should be treated as a secret
+  const workingDir = core.getInput("working-directory", { required: true });
   const debug = core.getBooleanInput("debug");
+
+  const commonExecOpts = {
+    cwd: workingDir,
+  };
 
   core.setSecret(ghToken);
 
@@ -56,19 +61,50 @@ async function run() {
   core.info(`[js-dependency-update] : working directory is ${workingDir}`);
 
   await exec.exec("npm update", [], {
-    cwd: workingDir,
+    ...commonExecOpts,
   });
 
   const gitStatus = await exec.getExecOutput(
     "git status -s package*-json",
     [],
     {
-      cwd: workingDir,
+      ...commonExecOpts,
     },
   );
 
   if (gitStatus.stdout.length > 0) {
     core.info("[js-dependency-update] : There are updates available!");
+    await exec.exec(`git config --global user.name "gh-automation"`);
+    await exec.exec(`git config --global user.email "gh-automation@email.com"`);
+    await exec.exec(`git checkout -b ${targetBranch}`, [], {
+      ...commonExecOpts,
+    });
+    await exec.exec(`git add package.json package-lock.json`, [], {
+      ...commonExecOpts,
+    });
+    await exec.exec(`git commit -m "chore: update dependencies"`, [], {
+      ...commonExecOpts,
+    });
+    await exec.exec(`git push -u origin ${targetBranch} --force`, [], {
+      ...commonExecOpts,
+    });
+
+    const octoKit = github.getOctokit(ghToken);
+
+    try {
+      await octoKit.rest.pulls.create({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        title: "Update NPM dependencies",
+        body: "this pull request updates pull",
+        base: baseBranch,
+        head: targetBranch,
+      });
+    } catch (e) {
+      core.error("Something went wrong");
+      core.setFailed(e.message);
+      core.error(e);
+    }
   } else {
     core.info("[js-dependency-update] : No updates right now!");
   }
